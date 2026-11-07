@@ -653,11 +653,7 @@
     <div class="sub-panel-label">Choose a collocation type</div>
     <div class="type-chips" id="typeChips">
         <button class="type-chip active" data-type="all">All Types</button>
-        <button class="type-chip" data-type="verb-noun">Verb + Noun</button>
-        <button class="type-chip" data-type="adj-noun">Adj + Noun</button>
-        <button class="type-chip" data-type="adv-adj">Adv + Adj</button>
-        <button class="type-chip" data-type="adv-verb">Adv + Verb</button>
-        <button class="type-chip" data-type="noun-noun">Noun + Noun</button>
+        <!-- type chips are generated from COLLOCATIONS data (see renderChips) -->
     </div>
 </div>
 
@@ -665,16 +661,7 @@
     <div class="sub-panel-label">Choose a topic</div>
     <div class="topic-chips" id="topicChips">
         <button class="topic-chip active" data-topic="all">All Topics</button>
-        <button class="topic-chip" data-topic="daily">Daily Life</button>
-        <button class="topic-chip" data-topic="work">Work</button>
-        <button class="topic-chip" data-topic="education">Education</button>
-        <button class="topic-chip" data-topic="health">Health</button>
-        <button class="topic-chip" data-topic="people">People</button>
-        <button class="topic-chip" data-topic="money">Money</button>
-        <button class="topic-chip" data-topic="travel">Travel</button>
-        <button class="topic-chip" data-topic="food">Food</button>
-        <button class="topic-chip" data-topic="weather">Weather</button>
-        <button class="topic-chip" data-topic="technology">Technology</button>
+        <!-- topic chips are generated from COLLOCATIONS data (see renderChips) -->
     </div>
 </div>
 
@@ -837,12 +824,10 @@ function initMotherTabs() {
             if (selectedMode === "type") {
                 document.querySelectorAll(".type-chip").forEach(b => b.classList.remove("active"));
                 document.querySelector('.type-chip[data-type="all"]').classList.add("active");
-                updateTypeCounts();
             }
             if (selectedMode === "topic") {
                 document.querySelectorAll(".topic-chip").forEach(b => b.classList.remove("active"));
                 document.querySelector('.topic-chip[data-topic="all"]').classList.add("active");
-                updateTopicCounts();
             }
 
             startQuiz();
@@ -854,6 +839,7 @@ function initMotherTabs() {
 // BY TYPE
 // ============================
 function initTypeChips() {
+    renderChips("typeChips", "type-chip", "type", "type", TYPE_LABELS);
     document.querySelectorAll(".type-chip").forEach(btn => {
         btn.addEventListener("click", () => {
             document.querySelectorAll(".type-chip").forEach(b => b.classList.remove("active"));
@@ -862,18 +848,31 @@ function initTypeChips() {
             startQuiz();
         });
     });
-    updateTypeCounts();
 }
 
-function updateTypeCounts() {
-    const types = ["verb-noun", "adj-noun", "adv-adj", "adv-verb", "noun-noun"];
-    types.forEach(t => {
-        const count = COLLOCATIONS.filter(c => c.type === t).length;
-        const chip = document.querySelector(`.type-chip[data-type="${t}"]`);
-        if (chip) {
-            const label = chip.textContent.replace(/\s*\(\d+\)/, "");
-            chip.textContent = `${label} (${count})`;
-        }
+const TYPE_LABELS = {
+    "verb-noun": "Verb + Noun", "adj-noun": "Adj + Noun", "adv-adj": "Adv + Adj", "adv-verb": "Adv + Verb",
+    "noun-noun": "Noun + Noun", "noun-verb": "Noun + Verb", "verb-preposition": "Verb + Prep"
+};
+const TOPIC_LABELS = {
+    daily: "Daily Life", work: "Work", education: "Education", health: "Health", people: "People", money: "Money",
+    travel: "Travel", food: "Food", weather: "Weather", technology: "Technology", law: "Law", science: "Science",
+    politics: "Politics", communication: "Communication", social: "Social", business: "Business",
+    emotion: "Emotion", academic: "Academic"
+};
+
+// Build one chip per value that actually exists in the data, ordered by item count.
+function renderChips(containerId, chipClass, dataAttr, field, labels) {
+    const container = document.getElementById(containerId);
+    const counts = {};
+    COLLOCATIONS.forEach(c => { counts[c[field]] = (counts[c[field]] || 0) + 1; });
+    Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach(v => {
+        const btn = document.createElement("button");
+        btn.className = chipClass;
+        btn.dataset[dataAttr] = v;
+        const label = labels[v] || (v.charAt(0).toUpperCase() + v.slice(1));
+        btn.textContent = `${label} (${counts[v]})`;
+        container.appendChild(btn);
     });
 }
 
@@ -881,6 +880,7 @@ function updateTypeCounts() {
 // BY TOPIC
 // ============================
 function initTopicChips() {
+    renderChips("topicChips", "topic-chip", "topic", "topic", TOPIC_LABELS);
     document.querySelectorAll(".topic-chip").forEach(btn => {
         btn.addEventListener("click", () => {
             document.querySelectorAll(".topic-chip").forEach(b => b.classList.remove("active"));
@@ -888,19 +888,6 @@ function initTopicChips() {
             selectedTopic = btn.dataset.topic;
             startQuiz();
         });
-    });
-    updateTopicCounts();
-}
-
-function updateTopicCounts() {
-    const topics = ["daily", "work", "education", "health", "people", "money", "travel", "food", "weather", "technology"];
-    topics.forEach(t => {
-        const count = COLLOCATIONS.filter(c => c.topic === t).length;
-        const chip = document.querySelector(`.topic-chip[data-topic="${t}"]`);
-        if (chip) {
-            const label = chip.textContent.replace(/\s*\(\d+\)/, "");
-            chip.textContent = `${label} (${count})`;
-        }
     });
 }
 
@@ -1028,7 +1015,7 @@ function showQuestion() {
     const score = getScore(q.phrase);
     let badgeHTML = "";
 
-    const typeLabels = {"verb-noun":"V+N","adj-noun":"A+N","adv-adj":"Adv+A","adv-verb":"Adv+V","noun-noun":"N+N","verb-adv":"V+Adv"};
+    const typeLabels = {"verb-noun":"V+N","adj-noun":"A+N","adv-adj":"Adv+A","adv-verb":"Adv+V","noun-noun":"N+N","noun-verb":"N+V","verb-preposition":"V+Prep"};
     badgeHTML += `<span class="type-badge">${typeLabels[q.type] || q.type}</span>`;
 
     if (q.level) {
